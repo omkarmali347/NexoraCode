@@ -1,4 +1,8 @@
 import * as vscode from "vscode";
+import { ChatController } from "../controllers/ChatController";
+import { MessageBus } from "../messaging/MessageBus";
+import { getWebviewContent } from "../webview/getWebviewContent";
+import { MessageHandler } from "./MessageHandler";
 
 export class SidebarProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = "nexoracode.sidebar";
@@ -12,57 +16,23 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     ): void {
 
         webviewView.webview.options = {
-            enableScripts: true
+            enableScripts: true,
+            localResourceRoots: [
+                vscode.Uri.joinPath(this.extensionUri, "media")
+            ]
         };
 
-        webviewView.webview.html = this.getHtml();
-    }
+        webviewView.webview.html = getWebviewContent(
+            webviewView.webview,
+            this.extensionUri
+        );
 
-    private getHtml(): string {
-        return `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <style>
-                body{
-                    font-family:Segoe UI;
-                    padding:20px;
-                    text-align:center;
-                    color:white;
-                    background:#1e1e1e;
-                }
+        const messageBus = new MessageBus(webviewView.webview);
+        const chatController = new ChatController(messageBus);
+        const messageHandler = new MessageHandler(chatController, messageBus);
 
-                h1{
-                    color:#4FC3F7;
-                }
-
-                button{
-                    margin-top:20px;
-                    padding:10px 18px;
-                    border:none;
-                    border-radius:8px;
-                    cursor:pointer;
-                    background:#007ACC;
-                    color:white;
-                    font-size:15px;
-                }
-            </style>
-        </head>
-
-        <body>
-
-            <h1>🚀 NexoraCode</h1>
-
-            <h3>Next-generation AI Coding Assistant</h3>
-
-            <p>Welcome!</p>
-
-            <button>New Chat</button>
-
-        </body>
-
-        </html>
-        `;
+        webviewView.webview.onDidReceiveMessage((message: unknown) => {
+            messageHandler.handle(message);
+        });
     }
 }
