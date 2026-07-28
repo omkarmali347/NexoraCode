@@ -4,6 +4,8 @@ export const WebviewMessageTypes = {
     ATTACH: "ATTACH",
     REMOVE_ATTACHMENT: "REMOVE_ATTACHMENT",
     OPEN_SETTINGS: "OPEN_SETTINGS",
+    SAVE_SETTINGS: "SAVE_SETTINGS",
+    TEST_CONNECTION: "TEST_CONNECTION",
     STOP_GENERATION: "STOP_GENERATION",
     REQUEST_MODELS: "REQUEST_MODELS",
     REQUEST_WORKSPACE: "REQUEST_WORKSPACE",
@@ -16,6 +18,7 @@ export const ExtensionMessageTypes = {
     MESSAGE_RESPONSE: "MESSAGE_RESPONSE",
     STATUS: "STATUS",
     ERROR: "ERROR",
+    SETTINGS_STATE: "SETTINGS_STATE",
     MODELS: "MODELS",
     WORKSPACE_FILES: "WORKSPACE_FILES",
     FILE_SELECTED: "FILE_SELECTED",
@@ -104,6 +107,12 @@ export interface PingPayload {
     readonly sentAt: number;
 }
 
+export interface ProviderSettingsPayload {
+    readonly apiKey?: string | null;
+    readonly baseUrl: string;
+    readonly model: string;
+}
+
 export interface ChatCreatedPayload {
     readonly chatId: string;
 }
@@ -127,6 +136,13 @@ export interface ErrorPayload {
     readonly code: string;
     readonly message: string;
     readonly recoverable: boolean;
+}
+
+export interface SettingsStatePayload {
+    readonly baseUrl: string;
+    readonly model: string;
+    readonly hasApiKey: boolean;
+    readonly status?: string;
 }
 
 export interface ModelsPayload {
@@ -174,6 +190,8 @@ export interface WebviewMessagePayloadMap {
     readonly [WebviewMessageTypes.ATTACH]: AttachPayload;
     readonly [WebviewMessageTypes.REMOVE_ATTACHMENT]: RemoveAttachmentPayload;
     readonly [WebviewMessageTypes.OPEN_SETTINGS]: EmptyPayload;
+    readonly [WebviewMessageTypes.SAVE_SETTINGS]: ProviderSettingsPayload;
+    readonly [WebviewMessageTypes.TEST_CONNECTION]: ProviderSettingsPayload;
     readonly [WebviewMessageTypes.STOP_GENERATION]: StopGenerationPayload;
     readonly [WebviewMessageTypes.REQUEST_MODELS]: EmptyPayload;
     readonly [WebviewMessageTypes.REQUEST_WORKSPACE]: RequestWorkspacePayload;
@@ -186,6 +204,7 @@ export interface ExtensionMessagePayloadMap {
     readonly [ExtensionMessageTypes.MESSAGE_RESPONSE]: MessageResponsePayload;
     readonly [ExtensionMessageTypes.STATUS]: StatusPayload;
     readonly [ExtensionMessageTypes.ERROR]: ErrorPayload;
+    readonly [ExtensionMessageTypes.SETTINGS_STATE]: SettingsStatePayload;
     readonly [ExtensionMessageTypes.MODELS]: ModelsPayload;
     readonly [ExtensionMessageTypes.WORKSPACE_FILES]: WorkspaceFilesPayload;
     readonly [ExtensionMessageTypes.FILE_SELECTED]: FileSelectedPayload;

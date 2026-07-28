@@ -43,12 +43,27 @@ export function getWebviewContent(
                 </div>
             </div>
 
-            <button class="new-chat-button" id="newChatButton" type="button">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M12 5v14M5 12h14"></path>
-                </svg>
-                <span>New Chat</span>
-            </button>
+            <div class="header-actions">
+                <button
+                    class="icon-button header-icon-button"
+                    id="settingsButton"
+                    type="button"
+                    aria-label="Open settings"
+                    title="Settings"
+                >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                </button>
+
+                <button class="new-chat-button" id="newChatButton" type="button">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 5v14M5 12h14"></path>
+                    </svg>
+                    <span>New Chat</span>
+                </button>
+            </div>
         </header>
 
         <main class="chat-main" aria-label="NexoraCode chat">
@@ -138,13 +153,13 @@ export function getWebviewContent(
                     </select>
                 </label>
 
-                <span class="character-count" id="characterCount">0 / 4000</span>
+                <span class="character-count" id="characterCount">0 / 8000</span>
             </div>
 
             <div class="input-row">
                 <textarea
                     id="messageInput"
-                    maxlength="4000"
+                    maxlength="8000"
                     rows="1"
                     placeholder="Ask NexoraCode to review, explain, or draft..."
                     aria-label="Chat message"
@@ -162,6 +177,72 @@ export function getWebviewContent(
         <footer class="footer">
             Powered by NexoraCode
         </footer>
+
+        <div class="settings-backdrop" id="settingsPanel" hidden>
+            <section
+                class="settings-dialog"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="settingsTitle"
+            >
+                <header class="settings-header">
+                    <h2 id="settingsTitle">Settings</h2>
+                    <button
+                        class="icon-button"
+                        id="settingsCloseButton"
+                        type="button"
+                        aria-label="Close settings"
+                        title="Close"
+                    >
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M18 6L6 18"></path>
+                            <path d="M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </header>
+
+                <form class="settings-form" id="settingsForm">
+                    <label>
+                        <span>Anthropic Auth Token</span>
+                        <input
+                            id="settingsApiKey"
+                            type="password"
+                            autocomplete="off"
+                            placeholder="Enter Anthropic Auth Token"
+                            aria-label="Anthropic Auth Token"
+                        >
+                    </label>
+
+                    <label>
+                        <span>Anthropic Base URL</span>
+                        <input
+                            id="settingsBaseUrl"
+                            type="url"
+                            placeholder="https://agentrouter.org"
+                            aria-label="Anthropic Base URL"
+                        >
+                    </label>
+
+                    <label>
+                        <span>Anthropic Model</span>
+                        <input
+                            id="settingsModel"
+                            autocomplete="off"
+                            placeholder="claude-opus-4-6"
+                            aria-label="Anthropic Model"
+                        >
+                    </label>
+
+                    <p class="settings-status" id="settingsStatus" role="status"></p>
+
+                    <div class="settings-actions">
+                        <button class="secondary-button" id="settingsCancelButton" type="button">Cancel</button>
+                        <button class="secondary-button" id="testConnectionButton" type="button">Test Connection</button>
+                        <button class="primary-button" type="submit">Save</button>
+                    </div>
+                </form>
+            </section>
+        </div>
     </div>
 
     <script type="module" nonce="${nonce}" src="${scriptUri}"></script>

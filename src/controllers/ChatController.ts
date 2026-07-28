@@ -1,18 +1,19 @@
 import {
     AttachPayload,
     EmptyPayload,
+    ErrorPayload,
     ExtensionMessageTypes,
     NewChatPayload,
     PingPayload,
+    ProviderSettingsPayload,
     RemoveAttachmentPayload,
     RequestWorkspacePayload,
     SendMessagePayload,
     StopGenerationPayload
 } from "../protocol/messageTypes";
+import { AIProviderError } from "../ai/AIProviderError";
 import { createMessageId, MessageBus } from "../messaging/MessageBus";
-
-const PHASE_TWO_RESPONSE =
-    "Phase 2 communication successful. AI integration will be implemented in Phase 3.";
+import { AIService, ProviderConnectionInput } from "../services/AIService";
 
 const ATTACHMENT_PLACEHOLDER =
     "Attachment service will be implemented in Phase 4.";
@@ -21,12 +22,14 @@ export class ChatController {
     private activeChatId: string | null = null;
 
     constructor(
-        private readonly messageBus: MessageBus
+        private readonly messageBus: MessageBus,
+        private readonly aiService: AIService
     ) {}
 
     public createNewChat(payload: NewChatPayload): void {
         const chatId = createMessageId("chat");
         this.activeChatId = chatId;
+        this.aiService.createConversation(chatId);
 
         console.log("[Extension] New chat requested.", {
             chatId,
@@ -39,7 +42,7 @@ export class ChatController {
         this.messageBus.status("ready", "New chat ready.");
     }
 
-    public receiveMessage(payload: SendMessagePayload): void {
+    public async receiveMessage(payload: SendMessagePayload): Promise<void> {
         const chatId = this.resolveChatId(payload.chatId);
         const messageId = createMessageId("user");
 
@@ -55,22 +58,28 @@ export class ChatController {
             chatId,
             messageId
         });
-        this.messageBus.post(ExtensionMessageTypes.MESSAGE_RESPONSE, {
-            chatId,
-            message: {
-                id: createMessageId("assistant"),
-                role: "assistant",
-                content: PHASE_TWO_RESPONSE,
-                timestamp: Date.now(),
-                codeBlock: {
-                    language: "ts",
-                    fileName: "phase-2.ts",
-                    label: "placeholder",
-                    content: "// Extension messaging is connected. AI arrives in Phase 3."
+
+        try {
+            const response = await this.aiService.sendMessage({
+                conversationId: chatId,
+                userMessage: payload.content
+            });
+
+            this.messageBus.post(ExtensionMessageTypes.MESSAGE_RESPONSE, {
+                chatId,
+                message: {
+                    id: response.messageId,
+                    role: "assistant",
+                    content: response.content,
+                    timestamp: Date.now()
                 }
-            }
-        });
-        this.messageBus.status("ready", "Ready");
+            });
+        } catch (error: unknown) {
+            const payload = this.toErrorPayload(error);
+
+            console.error("[Extension] AI request failed.", payload.code);
+            this.messageBus.error(payload);
+        }
     }
 
     public attach(payload: AttachPayload): void {
@@ -100,9 +109,47 @@ export class ChatController {
         this.messageBus.status("warning", "Attachment removal is not implemented yet.");
     }
 
-    public openSettings(_payload: EmptyPayload): void {
+    public async openSettings(_payload: EmptyPayload): Promise<void> {
         console.log("[Extension] Open settings requested.");
-        this.messageBus.status("warning", "Settings will be implemented in a future phase.");
+        await this.postSettingsState();
+    }
+
+    public async saveSettings(payload: ProviderSettingsPayload): Promise<void> {
+        console.log("[Extension] Save provider settings requested.", {
+            hasApiKey: Boolean(payload.apiKey),
+            baseUrlConfigured: payload.baseUrl.trim().length > 0,
+            modelConfigured: payload.model.trim().length > 0
+        });
+
+        try {
+            await this.aiService.saveSettings(this.toConnectionInput(payload));
+            await this.postSettingsState("Settings saved.");
+            this.messageBus.status("ready", "Settings saved.");
+        } catch (error: unknown) {
+            this.messageBus.error(this.toErrorPayload(error));
+        }
+    }
+
+    public async testConnection(payload: ProviderSettingsPayload): Promise<void> {
+        console.log("[Extension] Test AgentRouter connection requested.", {
+            baseUrlConfigured: payload.baseUrl.trim().length > 0,
+            modelConfigured: payload.model.trim().length > 0
+        });
+
+        try {
+            await this.aiService.testConnection(this.toConnectionInput(payload));
+            await this.postSettingsState("Connection succeeded.");
+            this.messageBus.status("ready", "Connection succeeded.");
+        } catch (error: unknown) {
+            this.messageBus.error(this.toErrorPayload(error));
+        }
+    }
+
+    public async refreshModels(payload: ProviderSettingsPayload): Promise<void> {
+        console.log("[Extension] Ignored model refresh request.", {
+            baseUrlConfigured: payload.baseUrl.trim().length > 0
+        });
+        await this.postSettingsState("Model discovery is not used for this Anthropic integration.");
     }
 
     public stopGeneration(payload: StopGenerationPayload): void {
@@ -113,16 +160,9 @@ export class ChatController {
     }
 
     public requestModels(_payload: EmptyPayload): void {
-        console.log("[Extension] Models requested.");
+        console.log("[Extension] Ignored models request.");
         this.messageBus.post(ExtensionMessageTypes.MODELS, {
-            models: [
-                {
-                    id: "nexora-preview",
-                    name: "Nexora Preview",
-                    provider: "NexoraCode",
-                    isDefault: true
-                }
-            ]
+            models: []
         });
     }
 
@@ -156,6 +196,80 @@ export class ChatController {
 
         const chatId = createMessageId("chat");
         this.activeChatId = chatId;
+        this.aiService.createConversation(chatId);
         return chatId;
+    }
+
+    private async postSettingsState(status?: string): Promise<void> {
+        const state = await this.aiService.getSettingsState();
+
+        this.messageBus.post(ExtensionMessageTypes.SETTINGS_STATE, {
+            baseUrl: state.baseUrl,
+            model: state.model,
+            hasApiKey: state.hasApiKey,
+            status
+        });
+    }
+
+    private toConnectionInput(payload: ProviderSettingsPayload): ProviderConnectionInput {
+        return {
+            apiKey: payload.apiKey,
+            baseUrl: payload.baseUrl,
+            model: payload.model
+        };
+    }
+
+    private toErrorPayload(error: unknown): ErrorPayload {
+        if (error instanceof AIProviderError) {
+            return {
+                code: error.code,
+                message: error.message,
+                recoverable: error.recoverable
+            };
+        }
+
+        const message = error instanceof Error
+            ? error.message
+            : "NexoraCode encountered an unexpected provider error.";
+
+        const lowerMessage = message.toLowerCase();
+
+        if (lowerMessage.includes("api key") || lowerMessage.includes("unauthorized") || lowerMessage.includes("authentication")) {
+            return {
+                code: "UNAUTHORIZED",
+                message: "AgentRouter authentication failed. Check your API key and try again.",
+                recoverable: true
+            };
+        }
+
+        if (lowerMessage.includes("timeout")) {
+            return {
+                code: "TIMEOUT",
+                message: "AgentRouter took too long to respond. Try again in a moment.",
+                recoverable: true
+            };
+        }
+
+        if (lowerMessage.includes("model")) {
+            return {
+                code: "UNKNOWN_MODEL",
+                message: "The selected model was not accepted by AgentRouter. Use the exact configured model id.",
+                recoverable: true
+            };
+        }
+
+        if (lowerMessage.includes("network") || lowerMessage.includes("connection")) {
+            return {
+                code: "NETWORK_ERROR",
+                message: "NexoraCode could not reach AgentRouter. Check the base URL and network connection.",
+                recoverable: true
+            };
+        }
+
+        return {
+            code: "PROVIDER_ERROR",
+            message,
+            recoverable: true
+        };
     }
 }

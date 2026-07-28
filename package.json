@@ -13,7 +13,8 @@
   "activationEvents": [
     "onView:nexoracode.sidebar",
     "onCommand:nexoracode.helloWorld",
-    "onCommand:nexoracode.openSidebar"
+    "onCommand:nexoracode.openSidebar",
+    "onCommand:nexoracode.configureProvider"
   ],
   "contributes": {
     "viewsContainers": {
@@ -34,6 +35,21 @@
         }
       ]
     },
+    "configuration": {
+      "title": "NexoraCode",
+      "properties": {
+        "nexoracode.anthropic.baseUrl": {
+          "type": "string",
+          "default": "https://agentrouter.org",
+          "description": "AgentRouter base URL used by the official Anthropic SDK."
+        },
+        "nexoracode.anthropic.model": {
+          "type": "string",
+          "default": "claude-opus-4-6",
+          "description": "Exact AgentRouter Claude model id sent to the Anthropic SDK."
+        }
+      }
+    },
     "commands": [
       {
         "command": "nexoracode.helloWorld",
@@ -42,6 +58,10 @@
       {
         "command": "nexoracode.openSidebar",
         "title": "NexoraCode: Open Sidebar"
+      },
+      {
+        "command": "nexoracode.configureProvider",
+        "title": "NexoraCode: Configure AgentRouter"
       }
     ]
   },
@@ -60,19 +80,22 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.125.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "24.x",
-    "typescript-eslint": "^8.61.1",
-    "eslint": "^10.5.0",
+    "@types/vscode": "^1.125.0",
+    "@vscode/test-cli": "^0.0.15",
+    "@vscode/test-electron": "^3.0.0",
     "esbuild": "^0.28.1",
+    "eslint": "^10.5.0",
     "npm-run-all": "^4.1.5",
     "typescript": "^6.0.3",
-    "@vscode/test-cli": "^0.0.15",
-    "@vscode/test-electron": "^3.0.0"
+    "typescript-eslint": "^8.61.1"
   },
   "overrides": {
     "diff": "^8.0.4",
     "serialize-javascript": "^7.0.6"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.115.0"
   }
 }

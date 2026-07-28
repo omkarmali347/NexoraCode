@@ -4,6 +4,7 @@ import {
     EmptyPayload,
     NewChatPayload,
     PingPayload,
+    ProviderSettingsPayload,
     RemoveAttachmentPayload,
     RequestWorkspacePayload,
     SendMessagePayload,
@@ -66,6 +67,14 @@ export function validateWebviewMessage(
         case WebviewMessageTypes.OPEN_SETTINGS:
         case WebviewMessageTypes.REQUEST_MODELS:
             return withPayload(message, isEmptyPayload, `Invalid ${message.type} payload.`);
+
+        case WebviewMessageTypes.SAVE_SETTINGS:
+        case WebviewMessageTypes.TEST_CONNECTION:
+            return withPayload(
+                message,
+                isProviderSettingsPayload,
+                `Invalid ${message.type} payload.`
+            );
 
         case WebviewMessageTypes.STOP_GENERATION:
             return withPayload(
@@ -204,6 +213,14 @@ function isPingPayload(candidate: unknown): candidate is PingPayload {
         && Number.isFinite(candidate.sentAt);
 }
 
+function isProviderSettingsPayload(candidate: unknown): candidate is ProviderSettingsPayload {
+    return isRecord(candidate)
+        && optionalStringOrNull(candidate.apiKey)
+        && typeof candidate.baseUrl === "string"
+        && candidate.baseUrl.trim().length > 0
+        && typeof candidate.model === "string";
+}
+
 function isEmptyPayload(candidate: unknown): candidate is EmptyPayload {
     return isRecord(candidate);
 }
@@ -228,6 +245,10 @@ function isNullableString(candidate: unknown): candidate is string | null {
 
 function optionalString(candidate: unknown): boolean {
     return typeof candidate === "undefined" || typeof candidate === "string";
+}
+
+function optionalStringOrNull(candidate: unknown): boolean {
+    return candidate === null || optionalString(candidate);
 }
 
 function optionalNumber(candidate: unknown): boolean {

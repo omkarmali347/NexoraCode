@@ -1,9 +1,12 @@
-const MAX_CHARACTERS = 4000;
+const MAX_CHARACTERS = 8000;
 
 const WebviewMessageTypes = Object.freeze({
     SEND_MESSAGE: "SEND_MESSAGE",
     NEW_CHAT: "NEW_CHAT",
     ATTACH: "ATTACH",
+    OPEN_SETTINGS: "OPEN_SETTINGS",
+    SAVE_SETTINGS: "SAVE_SETTINGS",
+    TEST_CONNECTION: "TEST_CONNECTION",
     PING: "PING"
 });
 
@@ -12,6 +15,7 @@ const ExtensionMessageTypes = Object.freeze({
     MESSAGE_RESPONSE: "MESSAGE_RESPONSE",
     STATUS: "STATUS",
     ERROR: "ERROR",
+    SETTINGS_STATE: "SETTINGS_STATE",
     MODELS: "MODELS",
     WORKSPACE_FILES: "WORKSPACE_FILES",
     PONG: "PONG"
@@ -66,6 +70,12 @@ class ChatView {
             }
         });
 
+        window.addEventListener("keydown", (event) => {
+            if (event.key === "Escape" && !this.elements.settingsPanel.hidden) {
+                this.closeSettingsPanel();
+            }
+        });
+
         this.elements.form.addEventListener("submit", (event) => {
             event.preventDefault();
             this.submitMessage();
@@ -81,6 +91,30 @@ class ChatView {
             this.webviewApi.post(WebviewMessageTypes.ATTACH, {
                 source: "toolbar"
             });
+        });
+
+        this.elements.settingsButton.addEventListener("click", () => {
+            this.openSettingsPanel("Loading settings...");
+            this.webviewApi.post(WebviewMessageTypes.OPEN_SETTINGS, {});
+        });
+
+        this.elements.settingsCloseButton.addEventListener("click", () => {
+            this.closeSettingsPanel();
+        });
+
+        this.elements.settingsCancelButton.addEventListener("click", () => {
+            this.closeSettingsPanel();
+        });
+
+        this.elements.settingsForm.addEventListener("submit", (event) => {
+            event.preventDefault();
+            this.setSettingsStatus("Saving settings...");
+            this.webviewApi.post(WebviewMessageTypes.SAVE_SETTINGS, this.collectSettings());
+        });
+
+        this.elements.testConnectionButton.addEventListener("click", () => {
+            this.setSettingsStatus("Testing connection...");
+            this.webviewApi.post(WebviewMessageTypes.TEST_CONNECTION, this.collectSettings());
         });
 
         this.elements.suggestionCards.forEach((card) => {
@@ -124,6 +158,10 @@ class ChatView {
 
             case ExtensionMessageTypes.ERROR:
                 this.handleError(message.payload);
+                return;
+
+            case ExtensionMessageTypes.SETTINGS_STATE:
+                this.handleSettingsState(message.payload);
                 return;
 
             case ExtensionMessageTypes.MODELS:
@@ -211,8 +249,68 @@ class ChatView {
             ? payload.message
             : "NexoraCode encountered a recoverable communication error.";
 
-        this.addSystemMessage(message);
+        if (!this.elements.settingsPanel.hidden) {
+            this.setSettingsStatus(message);
+        } else {
+            this.addSystemMessage(message);
+        }
         this.updateStatus("Error");
+    }
+
+    handleSettingsState(payload) {
+        if (!isRecord(payload)) {
+            this.setSettingsStatus("Unable to load settings.");
+            return;
+        }
+
+        this.openSettingsPanel();
+
+        if (typeof payload.baseUrl === "string") {
+            this.elements.settingsBaseUrl.value = payload.baseUrl;
+        }
+
+        if (typeof payload.model === "string") {
+            this.elements.settingsModel.value = payload.model;
+        }
+
+        if (typeof payload.hasApiKey === "boolean") {
+            this.elements.settingsApiKey.placeholder = payload.hasApiKey
+                ? "Saved auth token will be kept"
+                : "Enter Anthropic Auth Token";
+        }
+
+        const status = typeof payload.status === "string" ? payload.status : "";
+
+        if (status === "Settings saved.") {
+            this.elements.settingsApiKey.value = "";
+        }
+
+        this.setSettingsStatus(status);
+    }
+
+    collectSettings() {
+        return {
+            apiKey: this.elements.settingsApiKey.value.trim() || null,
+            baseUrl: this.elements.settingsBaseUrl.value.trim(),
+            model: this.elements.settingsModel.value.trim()
+        };
+    }
+
+    openSettingsPanel(status = "") {
+        this.elements.settingsPanel.hidden = false;
+        this.setSettingsStatus(status);
+        this.elements.settingsBaseUrl.focus();
+    }
+
+    closeSettingsPanel() {
+        this.elements.settingsPanel.hidden = true;
+        this.elements.settingsApiKey.value = "";
+        this.setSettingsStatus("");
+        this.elements.textarea.focus();
+    }
+
+    setSettingsStatus(message) {
+        this.elements.settingsStatus.textContent = message;
     }
 
     addSystemMessage(content) {
@@ -308,6 +406,16 @@ function getElements() {
         characterCount: getRequiredElement("#characterCount"),
         newChatButton: getRequiredElement("#newChatButton"),
         attachButton: getRequiredElement("#attachButton"),
+        settingsButton: getRequiredElement("#settingsButton"),
+        settingsPanel: getRequiredElement("#settingsPanel"),
+        settingsCloseButton: getRequiredElement("#settingsCloseButton"),
+        settingsCancelButton: getRequiredElement("#settingsCancelButton"),
+        settingsForm: getRequiredElement("#settingsForm"),
+        settingsApiKey: getRequiredElement("#settingsApiKey"),
+        settingsBaseUrl: getRequiredElement("#settingsBaseUrl"),
+        settingsModel: getRequiredElement("#settingsModel"),
+        settingsStatus: getRequiredElement("#settingsStatus"),
+        testConnectionButton: getRequiredElement("#testConnectionButton"),
         statusText: getRequiredElement("#statusText"),
         suggestionCards: document.querySelectorAll(".suggestion-card")
     };

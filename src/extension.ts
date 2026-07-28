@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { registerProviderCommands } from "./commands/registerProviderCommands";
 import { SidebarProvider } from "./sidebar/SidebarProvider";
 
 export function activate(context: vscode.ExtensionContext) {
@@ -6,7 +7,7 @@ export function activate(context: vscode.ExtensionContext) {
     console.log("NexoraCode extension is now active!");
 
     // Register Sidebar
-    const sidebarProvider = new SidebarProvider(context.extensionUri);
+    const sidebarProvider = new SidebarProvider(context);
 
     context.subscriptions.push(
         vscode.window.registerWebviewViewProvider(
@@ -37,7 +38,8 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(
         helloWorld,
-        openSidebar
+        openSidebar,
+        ...registerProviderCommands(context)
     );
 }
 

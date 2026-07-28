@@ -9,7 +9,7 @@ export class MessageHandler {
         private readonly messageBus: MessageBus
     ) {}
 
-    public handle(rawMessage: unknown): void {
+    public async handle(rawMessage: unknown): Promise<void> {
         const validation = validateWebviewMessage(rawMessage);
 
         if (!validation.ok) {
@@ -33,7 +33,7 @@ export class MessageHandler {
                     return;
 
                 case WebviewMessageTypes.SEND_MESSAGE:
-                    this.chatController.receiveMessage(message.payload);
+                    await this.chatController.receiveMessage(message.payload);
                     return;
 
                 case WebviewMessageTypes.ATTACH:
@@ -45,7 +45,15 @@ export class MessageHandler {
                     return;
 
                 case WebviewMessageTypes.OPEN_SETTINGS:
-                    this.chatController.openSettings(message.payload);
+                    await this.chatController.openSettings(message.payload);
+                    return;
+
+                case WebviewMessageTypes.SAVE_SETTINGS:
+                    await this.chatController.saveSettings(message.payload);
+                    return;
+
+                case WebviewMessageTypes.TEST_CONNECTION:
+                    await this.chatController.testConnection(message.payload);
                     return;
 
                 case WebviewMessageTypes.STOP_GENERATION:

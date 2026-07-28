@@ -182,6 +182,19 @@ svg {
         transform 140ms ease;
 }
 
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 0 0 auto;
+}
+
+.header-icon-button {
+    width: 30px;
+    height: 30px;
+    color: var(--nexora-text-muted);
+}
+
 .new-chat-button {
     grid-auto-flow: column;
     gap: 6px;
@@ -448,6 +461,110 @@ svg {
 .icon-button:hover {
     color: var(--vscode-sideBar-foreground);
     background: var(--vscode-toolbar-hoverBackground);
+}
+
+.settings-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    display: grid;
+    place-items: center;
+    padding: 14px;
+    background: color-mix(in srgb, var(--vscode-sideBar-background) 72%, transparent);
+}
+
+.settings-dialog {
+    width: min(100%, 420px);
+    max-height: min(100%, 620px);
+    overflow: hidden;
+    border: 1px solid var(--nexora-border);
+    border-radius: var(--nexora-radius-lg);
+    background: var(--vscode-sideBar-background);
+    box-shadow: 0 22px 60px color-mix(in srgb, black 38%, transparent);
+}
+
+.settings-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 12px 10px;
+    border-bottom: 1px solid var(--nexora-border);
+}
+
+.settings-header h2 {
+    margin: 0;
+    color: var(--vscode-sideBarTitle-foreground, var(--vscode-sideBar-foreground));
+    font-size: 14px;
+    font-weight: 650;
+    letter-spacing: 0;
+}
+
+.settings-form {
+    display: grid;
+    gap: 12px;
+    padding: 12px;
+}
+
+.settings-form label {
+    display: grid;
+    gap: 6px;
+    color: var(--nexora-text-muted);
+    font-size: 11px;
+}
+
+.settings-form input,
+.settings-form select {
+    width: 100%;
+    min-width: 0;
+    height: 32px;
+    padding: 0 9px;
+    color: var(--vscode-input-foreground);
+    border: 1px solid var(--vscode-input-border, var(--nexora-border));
+    border-radius: var(--nexora-radius-sm);
+    background: var(--vscode-input-background);
+}
+
+.settings-status {
+    min-height: 18px;
+    margin: 0;
+    color: var(--nexora-text-muted);
+    font-size: 11px;
+}
+
+.settings-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.primary-button,
+.secondary-button {
+    min-height: 30px;
+    padding: 5px 10px;
+    border-radius: var(--nexora-radius-sm);
+    cursor: pointer;
+}
+
+.primary-button {
+    color: var(--vscode-button-foreground);
+    border: 1px solid transparent;
+    background: var(--vscode-button-background);
+}
+
+.primary-button:hover {
+    background: var(--vscode-button-hoverBackground);
+}
+
+.secondary-button {
+    color: var(--vscode-button-secondaryForeground, var(--vscode-sideBar-foreground));
+    border: 1px solid var(--nexora-border);
+    background: var(--vscode-button-secondaryBackground, var(--nexora-surface));
+}
+
+.secondary-button:hover {
+    background: var(--vscode-button-secondaryHoverBackground, var(--vscode-toolbar-hoverBackground));
 }
 
 .model-selector {
